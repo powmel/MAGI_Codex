@@ -80,15 +80,15 @@ F:\MAGI\data\inbox_wav
 powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
 ```
 
-
 ## Quick start (no IDE)
 
 ```powershell
 git clone <repo-url> F:\MAGI\code\repo
 Set-Location F:\MAGI\code\repo
 powershell -ExecutionPolicy Bypass -File .\scripts\doctor.ps1 -ConfigPath .\configs\pipeline-settings.json
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1 -ConfigPath .\configs\pipeline-settings.json
 powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
-```
+
 
 ## Outputs and verification
 
@@ -120,3 +120,12 @@ Example outputs are available under `docs/examples/`.
 | `ffmpeg not found` | ffmpeg not installed or missing PATH | `winget install Gyan.FFmpeg` |
 | `No whisper backend found` | whisper.cpp/faster-whisper not installed | Install whisper.cpp or run `pip install faster-whisper` |
 
+### Minimal troubleshooting commands
+
+```powershell
+Get-Command ffmpeg
+Get-Command whisper-cli
+Get-Command faster-whisper
+python -m pip show faster-whisper
+Get-PSDrive C,F
+```

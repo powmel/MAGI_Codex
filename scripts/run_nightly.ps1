@@ -111,7 +111,7 @@ try {
       $startRelative = $candidate.startSeconds - ([int]([regex]::Match($candidate.chunkId, "\d+$").Value) * $config.chunking.segmentSeconds)
       $duration = $candidate.endSeconds - $candidate.startSeconds
 
-      & ffmpeg -hide_banner -y -i $chunkFile -ss $startRelative -t $duration $snippetPath | Out-Null
+      & $ffmpegPath -hide_banner -y -i $chunkFile -ss $startRelative -t $duration $snippetPath | Out-Null
 
       $pass2Segments += Invoke-MagiTranscription -AudioPath $snippetPath -OutputDir (Join-Path $tempRoot "transcripts") -ChunkId $candidate.chunkId -ChunkOffsetSeconds $candidate.startSeconds -PreferredTool $config.transcription.preferred -Config ([pscustomobject]@{
           whisperCpp = [pscustomobject]@{

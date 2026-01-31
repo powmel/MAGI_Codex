@@ -42,6 +42,15 @@ function Resolve-MagiToolPath {
   return $null
 }
 
+function Get-MagiFfmpegPath {
+  $ffmpegPath = Resolve-MagiToolPath -ConfiguredPath $null -CommandName "ffmpeg"
+  if (-not $ffmpegPath) {
+    throw "ffmpeg not found. Install via winget install Gyan.FFmpeg or add ffmpeg to PATH."
+  }
+
+  return $ffmpegPath
+}
+
 function Convert-MagiAudioToArchive {
   param(
     [Parameter(Mandatory = $true)][string]$InputFile,
@@ -50,6 +59,8 @@ function Convert-MagiAudioToArchive {
     [Parameter(Mandatory = $true)][string]$Bitrate
   )
 
+  $ffmpegPath = Get-MagiFfmpegPath
+  & $ffmpegPath -hide_banner -y -i $InputFile -c:a $Codec -b:a $Bitrate $OutputFile | Out-Null
   & ffmpeg -hide_banner -y -i $InputFile -c:a $Codec -b:a $Bitrate $OutputFile | Out-Null
 }
 
@@ -63,6 +74,8 @@ function Convert-MagiAudioToChunks {
   Ensure-MagiDirectory -Path $OutputDir
 
   $chunkPattern = Join-Path $OutputDir "chunk_%03d.wav"
+  $ffmpegPath = Get-MagiFfmpegPath
+  & $ffmpegPath -hide_banner -y -i $InputFile -f segment -segment_time $SegmentSeconds -c copy $chunkPattern | Out-Null
   & ffmpeg -hide_banner -y -i $InputFile -f segment -segment_time $SegmentSeconds -c copy $chunkPattern | Out-Null
 
   return Get-ChildItem -Path $OutputDir -Filter "chunk_*.wav" | Sort-Object Name
