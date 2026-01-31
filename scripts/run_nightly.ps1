@@ -13,8 +13,9 @@ if (-not (Test-Path -LiteralPath $configPath)) {
 
 $config = Get-Content -Path $configPath | ConvertFrom-Json
 $dataRoot = $config.dataRoot
-$forcedTempRoot = "F:\\MAGI\\temp"
-$tempRoot = $forcedTempRoot
+$config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
+$dataRoot = $config.dataRoot
+$tempRoot = "F:\\MAGI\\temp"
 $logRoot = $config.logRoot
 
 $env:TEMP = $tempRoot
@@ -41,7 +42,6 @@ if ($LASTEXITCODE -ne 0) {
   throw "Dependency checks failed. Run scripts/doctor.ps1 for details."
 }
 
-$ffmpegPath = Get-MagiFfmpegPath
 
 $inboxDir = Join-Path $dataRoot "inbox_wav"
 $archiveDir = Join-Path $dataRoot "archive_audio"

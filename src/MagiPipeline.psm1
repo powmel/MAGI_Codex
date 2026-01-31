@@ -61,6 +61,7 @@ function Convert-MagiAudioToArchive {
 
   $ffmpegPath = Get-MagiFfmpegPath
   & $ffmpegPath -hide_banner -y -i $InputFile -c:a $Codec -b:a $Bitrate $OutputFile | Out-Null
+  & ffmpeg -hide_banner -y -i $InputFile -c:a $Codec -b:a $Bitrate $OutputFile | Out-Null
 }
 
 function Convert-MagiAudioToChunks {
@@ -75,6 +76,7 @@ function Convert-MagiAudioToChunks {
   $chunkPattern = Join-Path $OutputDir "chunk_%03d.wav"
   $ffmpegPath = Get-MagiFfmpegPath
   & $ffmpegPath -hide_banner -y -i $InputFile -f segment -segment_time $SegmentSeconds -c copy $chunkPattern | Out-Null
+  & ffmpeg -hide_banner -y -i $InputFile -f segment -segment_time $SegmentSeconds -c copy $chunkPattern | Out-Null
 
   return Get-ChildItem -Path $OutputDir -Filter "chunk_*.wav" | Sort-Object Name
 }
