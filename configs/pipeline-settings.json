@@ -1,0 +1,68 @@
+{
+  "dataRoot": "F:\\MAGI\\data",
+  "tempRoot": "F:\\MAGI\\temp",
+  "logRoot": "F:\\MAGI\\logs",
+  "archive": {
+    "enabled": true,
+    "codec": "opus",
+    "bitrate": "48k"
+  },
+  "chunking": {
+    "segmentSeconds": 900
+  },
+  "transcription": {
+    "preferred": "whisper.cpp",
+    "whisperCpp": {
+      "binaryPath": "",
+      "modelPath": "",
+      "threads": 4,
+      "language": "en"
+    },
+    "fasterWhisper": {
+      "binaryPath": "",
+      "model": "base",
+      "device": "cpu",
+      "computeType": "int8"
+    },
+    "pass2": {
+      "modelPath": "",
+      "model": "medium",
+      "threads": 6
+    }
+  },
+  "detection": {
+    "datetimeKeywords": [
+      "today",
+      "tomorrow",
+      "tonight",
+      "this morning",
+      "this afternoon",
+      "this evening",
+      "next week",
+      "next month"
+    ],
+    "taskKeywords": [
+      "todo",
+      "to do",
+      "need to",
+      "please",
+      "follow up",
+      "email",
+      "call",
+      "submit",
+      "finish",
+      "review",
+      "prepare"
+    ],
+    "eventKeywords": [
+      "meeting",
+      "appointment",
+      "conference",
+      "demo",
+      "interview",
+      "workshop",
+      "lunch",
+      "dinner"
+    ]
+  }
+}

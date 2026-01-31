@@ -1,0 +1,13 @@
+# Local data and logs
+/data/
+/chunks/
+/logs/
+/archive_audio/
+/temp/
+
+# PowerShell output
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
