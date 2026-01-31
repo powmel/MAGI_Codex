@@ -1,0 +1,8 @@
+# Audio data and artifacts
+**/data/**
+**/chunks/**
+**/logs/**
+**/archive_audio/**
+
+# Temporary directories
+**/temp/**

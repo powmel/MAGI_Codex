@@ -1,0 +1,3 @@
+- proceed autonomously
+- do not modify .gitignore/.cursorignore unless explicitly requested
+- never write outputs inside the repo (only F:\MAGI\*)
