@@ -13,7 +13,9 @@ if (-not (Test-Path -LiteralPath $configPath)) {
 
 $config = Get-Content -Path $configPath | ConvertFrom-Json
 $dataRoot = $config.dataRoot
-$tempRoot = $config.tempRoot
+$config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
+$dataRoot = $config.dataRoot
+$tempRoot = "F:\\MAGI\\temp"
 $logRoot = $config.logRoot
 
 $env:TEMP = $tempRoot
@@ -27,6 +29,19 @@ $logFile = Join-Path $logRoot ("run_{0}.log" -f (Get-Date -Format "yyyyMMdd_HHmm
 $log = New-MagiLogWriter -LogFile $logFile
 
 $log.Invoke("MAGI nightly run started")
+$log.Invoke("TEMP set to $env:TEMP")
+$log.Invoke("TMP set to $env:TMP")
+
+$doctorPath = Join-Path $scriptRoot "doctor.ps1"
+if (-not (Test-Path -LiteralPath $doctorPath)) {
+  throw "Missing dependency checker: $doctorPath"
+}
+
+& $doctorPath -ConfigPath $configPath
+if ($LASTEXITCODE -ne 0) {
+  throw "Dependency checks failed. Run scripts/doctor.ps1 for details."
+}
+
 
 $inboxDir = Join-Path $dataRoot "inbox_wav"
 $archiveDir = Join-Path $dataRoot "archive_audio"

@@ -80,6 +80,16 @@ F:\MAGI\data\inbox_wav
 powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
 ```
 
+
+## Quick start (no IDE)
+
+```powershell
+git clone <repo-url> F:\MAGI\code\repo
+Set-Location F:\MAGI\code\repo
+powershell -ExecutionPolicy Bypass -File .\scripts\doctor.ps1 -ConfigPath .\configs\pipeline-settings.json
+powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
+```
+
 ## Outputs and verification
 
 After a successful run, you will find:
@@ -100,3 +110,13 @@ Example outputs are available under `docs/examples/`.
 - The pipeline automatically cleans up chunked audio files and temp files after each run.
 - Output logs avoid raw transcript content. Evidence snippets are stored only in the JSON outputs.
 - No audio data is committed to the repo; data remains in `F:\MAGI\data`.
+
+
+## Troubleshooting (minimal)
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| `Dependency checks failed` | Missing ffmpeg or STT backend | Run `.\scripts\doctor.ps1` and follow install hints |
+| `ffmpeg not found` | ffmpeg not installed or missing PATH | `winget install Gyan.FFmpeg` |
+| `No whisper backend found` | whisper.cpp/faster-whisper not installed | Install whisper.cpp or run `pip install faster-whisper` |
+
