@@ -1,0 +1,14 @@
+{
+  "files.exclude": {
+    "**/data/**": true,
+    "**/chunks/**": true,
+    "**/logs/**": true,
+    "**/archive_audio/**": true
+  },
+  "search.exclude": {
+    "**/data/**": true,
+    "**/chunks/**": true,
+    "**/logs/**": true,
+    "**/archive_audio/**": true
+  }
+}
