@@ -80,6 +80,7 @@ F:\MAGI\data\inbox_wav
 powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
 ```
 
+
 ## Quick start (no IDE)
 
 ```powershell
@@ -110,6 +111,7 @@ Example outputs are available under `docs/examples/`.
 - Output logs avoid raw transcript content. Evidence snippets are stored only in the JSON outputs.
 - No audio data is committed to the repo; data remains in `F:\MAGI\data`.
 
+
 ## Troubleshooting (minimal)
 
 | Symptom | Likely cause | Fix |
@@ -117,3 +119,4 @@ Example outputs are available under `docs/examples/`.
 | `Dependency checks failed` | Missing ffmpeg or STT backend | Run `.\scripts\doctor.ps1` and follow install hints |
 | `ffmpeg not found` | ffmpeg not installed or missing PATH | `winget install Gyan.FFmpeg` |
 | `No whisper backend found` | whisper.cpp/faster-whisper not installed | Install whisper.cpp or run `pip install faster-whisper` |
+
