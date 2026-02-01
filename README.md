@@ -80,12 +80,30 @@ F:\MAGI\data\inbox_wav
 powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
 ```
 
+## No-IDE Quick Start
 ## Quick start (no IDE)
 
 ```powershell
 git clone <repo-url> F:\MAGI\code\repo
 Set-Location F:\MAGI\code\repo
 powershell -ExecutionPolicy Bypass -File .\scripts\doctor.ps1 -ConfigPath .\configs\pipeline-settings.json
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
+```
+
+## Expected directory layout under F:\MAGI\
+
+```
+F:\MAGI
+  ├─ data
+  │  ├─ inbox_wav
+  │  ├─ archive_audio
+  │  ├─ chunks
+  │  ├─ extracted
+  │  └─ daily
+  ├─ temp
+  └─ logs
+```
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1 -ConfigPath .\configs\pipeline-settings.json
 powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
 
@@ -97,6 +115,11 @@ After a successful run, you will find:
 - Granular extracts: `F:\MAGI\data\extracted\*.json`
 - Daily summary: `F:\MAGI\data\daily\YYYY-MM-DD.json`
 - Logs: `F:\MAGI\logs\run_*.log`
+
+Expected outputs (minimum):
+
+- Extracted JSON includes `source`, `transcript`, and `events/tasks/schedule` arrays with `id`, `confidence`, and `evidence`.
+- Daily JSON aggregates by date and deduplicates items by `id`.
 
 Use the JSON schemas to validate outputs:
 
@@ -120,6 +143,13 @@ Example outputs are available under `docs/examples/`.
 | `ffmpeg not found` | ffmpeg not installed or missing PATH | `winget install Gyan.FFmpeg` |
 | `No whisper backend found` | whisper.cpp/faster-whisper not installed | Install whisper.cpp or run `pip install faster-whisper` |
 
+Minimal commands:
+
+```powershell
+.\scripts\doctor.ps1 -ConfigPath .\configs\pipeline-settings.json
+.\scripts\smoke_test.ps1
+.\scripts\run_nightly.ps1
+.\scripts\self_check.ps1
 ### Minimal troubleshooting commands
 
 ```powershell
