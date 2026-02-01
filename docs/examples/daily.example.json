@@ -1,0 +1,48 @@
+{
+  "date": "2025-01-15",
+  "events": [
+    {
+      "id": "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
+      "title": "Schedule a design review meeting next Tuesday afternoon.",
+      "confidence": 0.82,
+      "evidence": {
+        "chunkId": "chunk_003",
+        "windowSeconds": {
+          "start": 1845.2,
+          "end": 1858.9
+        },
+        "snippet": "Schedule a design review meeting next Tuesday afternoon with the web team."
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "id": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b",
+      "title": "Need to follow up with the vendor about the shipment delay.",
+      "confidence": 0.78,
+      "evidence": {
+        "chunkId": "chunk_001",
+        "windowSeconds": {
+          "start": 612.4,
+          "end": 625.7
+        },
+        "snippet": "Need to follow up with the vendor about the shipment delay and update finance."
+      }
+    }
+  ],
+  "schedule": [
+    {
+      "id": "2c624232cdd221771294dfbb310aca000a0df6ac",
+      "description": "The demo is at 3:30 PM tomorrow.",
+      "confidence": 0.72,
+      "evidence": {
+        "chunkId": "chunk_002",
+        "windowSeconds": {
+          "start": 1210.8,
+          "end": 1216.2
+        },
+        "snippet": "The demo is at 3:30 PM tomorrow, we should be ready by noon."
+      }
+    }
+  ]
+}
