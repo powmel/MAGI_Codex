@@ -11,10 +11,11 @@ if (-not (Test-Path -LiteralPath $configPath)) {
   throw "Missing config: $configPath"
 }
 
+$config = Get-Content -Path $configPath | ConvertFrom-Json
+$dataRoot = $config.dataRoot
 $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
 $dataRoot = $config.dataRoot
-$forcedTempRoot = "F:\\MAGI\\temp"
-$tempRoot = $forcedTempRoot
+$tempRoot = "F:\\MAGI\\temp"
 $logRoot = $config.logRoot
 
 $env:TEMP = $tempRoot
@@ -41,7 +42,6 @@ if ($LASTEXITCODE -ne 0) {
   throw "Dependency checks failed. Run scripts/doctor.ps1 for details."
 }
 
-$ffmpegPath = Get-MagiFfmpegPath
 
 $inboxDir = Join-Path $dataRoot "inbox_wav"
 $archiveDir = Join-Path $dataRoot "archive_audio"
@@ -59,7 +59,7 @@ $chunkDirs = @()
 $tempFiles = @()
 
 try {
-  $audioFiles = Get-ChildItem -LiteralPath $inboxDir -Filter "*.wav" -File -ErrorAction SilentlyContinue
+  $audioFiles = Get-ChildItem -Path $inboxDir -Filter "*.wav" -File -ErrorAction SilentlyContinue
   if (-not $audioFiles) {
     $log.Invoke("No audio files found in inbox_wav")
     return
@@ -154,7 +154,7 @@ try {
     $dailyPath = Join-Path $dailyDir ("{0}.json" -f $dailyKey)
 
     $dailyPayload = if (Test-Path -LiteralPath $dailyPath) {
-      Get-Content -Path $dailyPath -Raw | ConvertFrom-Json
+      Get-Content -Path $dailyPath | ConvertFrom-Json
     } else {
       [pscustomobject]@{
         date = $dailyKey
@@ -164,49 +164,9 @@ try {
       }
     }
 
-    $existingIds = @{
-      events = @{}
-      tasks = @{}
-      schedule = @{}
-    }
-
-    foreach ($item in $dailyPayload.events) {
-      if (-not $item.id) {
-        $item.id = New-MagiStableId -Text $item.title -StartSeconds $item.evidence.windowSeconds.start -EndSeconds $item.evidence.windowSeconds.end
-      }
-      $existingIds.events[$item.id] = $true
-    }
-    foreach ($item in $dailyPayload.tasks) {
-      if (-not $item.id) {
-        $item.id = New-MagiStableId -Text $item.title -StartSeconds $item.evidence.windowSeconds.start -EndSeconds $item.evidence.windowSeconds.end
-      }
-      $existingIds.tasks[$item.id] = $true
-    }
-    foreach ($item in $dailyPayload.schedule) {
-      if (-not $item.id) {
-        $item.id = New-MagiStableId -Text $item.description -StartSeconds $item.evidence.windowSeconds.start -EndSeconds $item.evidence.windowSeconds.end
-      }
-      $existingIds.schedule[$item.id] = $true
-    }
-
-    foreach ($item in $extracted.events) {
-      if (-not $existingIds.events.ContainsKey($item.id)) {
-        $dailyPayload.events += $item
-        $existingIds.events[$item.id] = $true
-      }
-    }
-    foreach ($item in $extracted.tasks) {
-      if (-not $existingIds.tasks.ContainsKey($item.id)) {
-        $dailyPayload.tasks += $item
-        $existingIds.tasks[$item.id] = $true
-      }
-    }
-    foreach ($item in $extracted.schedule) {
-      if (-not $existingIds.schedule.ContainsKey($item.id)) {
-        $dailyPayload.schedule += $item
-        $existingIds.schedule[$item.id] = $true
-      }
-    }
+    $dailyPayload.events += $extracted.events
+    $dailyPayload.tasks += $extracted.tasks
+    $dailyPayload.schedule += $extracted.schedule
 
     Write-MagiJson -Path $dailyPath -Payload $dailyPayload
 

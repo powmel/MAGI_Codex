@@ -25,4 +25,3 @@ Each extracted JSON includes:
 - `events[]`, `tasks[]`, `schedule[]`
 - Evidence: chunk id, time window (seconds), and snippet
 - Confidence score per item
-- Stable item `id` derived from text + time window for daily deduplication

@@ -37,9 +37,8 @@
   "definitions": {
     "evidenceItem": {
       "type": "object",
-      "required": ["id", "confidence", "evidence"],
+      "required": ["confidence", "evidence"],
       "properties": {
-        "id": {"type": "string"},
         "title": {"type": "string"},
         "description": {"type": "string"},
         "confidence": {"type": "number", "minimum": 0, "maximum": 1},

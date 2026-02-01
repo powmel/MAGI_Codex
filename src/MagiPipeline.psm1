@@ -43,34 +43,12 @@ function Resolve-MagiToolPath {
 }
 
 function Get-MagiFfmpegPath {
-  $ffmpegPath = Resolve-MagiToolPath -ConfiguredPath "" -CommandName "ffmpeg"
+  $ffmpegPath = Resolve-MagiToolPath -ConfiguredPath $null -CommandName "ffmpeg"
   if (-not $ffmpegPath) {
-    throw "ffmpeg not found. Install with: winget install Gyan.FFmpeg"
+    throw "ffmpeg not found. Install via winget install Gyan.FFmpeg or add ffmpeg to PATH."
   }
 
   return $ffmpegPath
-}
-
-function Normalize-MagiText {
-  param([Parameter(Mandatory = $true)][string]$Text)
-
-  $normalized = $Text.ToLowerInvariant().Trim()
-  $normalized = [regex]::Replace($normalized, "\s+", " ")
-  return $normalized
-}
-
-function New-MagiStableId {
-  param(
-    [Parameter(Mandatory = $true)][string]$Text,
-    [Parameter(Mandatory = $true)][double]$StartSeconds,
-    [Parameter(Mandatory = $true)][double]$EndSeconds
-  )
-
-  $normalized = Normalize-MagiText -Text $Text
-  $payload = "{0}|{1}|{2}" -f $normalized, $StartSeconds.ToString("0.###"), $EndSeconds.ToString("0.###")
-  $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
-  $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
-  return ($hash | ForEach-Object { $_.ToString("x2") }) -join ""
 }
 
 function Convert-MagiAudioToArchive {
@@ -83,6 +61,7 @@ function Convert-MagiAudioToArchive {
 
   $ffmpegPath = Get-MagiFfmpegPath
   & $ffmpegPath -hide_banner -y -i $InputFile -c:a $Codec -b:a $Bitrate $OutputFile | Out-Null
+  & ffmpeg -hide_banner -y -i $InputFile -c:a $Codec -b:a $Bitrate $OutputFile | Out-Null
 }
 
 function Convert-MagiAudioToChunks {
@@ -97,6 +76,7 @@ function Convert-MagiAudioToChunks {
   $chunkPattern = Join-Path $OutputDir "chunk_%03d.wav"
   $ffmpegPath = Get-MagiFfmpegPath
   & $ffmpegPath -hide_banner -y -i $InputFile -f segment -segment_time $SegmentSeconds -c copy $chunkPattern | Out-Null
+  & ffmpeg -hide_banner -y -i $InputFile -f segment -segment_time $SegmentSeconds -c copy $chunkPattern | Out-Null
 
   return Get-ChildItem -Path $OutputDir -Filter "chunk_*.wav" | Sort-Object Name
 }
@@ -202,9 +182,6 @@ function Invoke-MagiTranscription {
     if (-not $modelPath) {
       throw "whisper.cpp modelPath not configured."
     }
-    if (-not (Test-Path -LiteralPath $modelPath)) {
-      throw "whisper.cpp model file not found at $modelPath"
-    }
 
     $threads = if ($Config.whisperCpp.threads) { $Config.whisperCpp.threads } else { 4 }
     $language = if ($Config.whisperCpp.language) { $Config.whisperCpp.language } else { "en" }
@@ -282,7 +259,6 @@ function Get-MagiExtractedItems {
   foreach ($segment in $Segments) {
     $text = $segment.text
     $lower = $text.ToLowerInvariant()
-    $stableId = New-MagiStableId -Text $text -StartSeconds $segment.startSeconds -EndSeconds $segment.endSeconds
     $evidence = [ordered]@{
       chunkId = $segment.chunkId
       windowSeconds = [ordered]@{
@@ -298,7 +274,6 @@ function Get-MagiExtractedItems {
     foreach ($keyword in $DetectionConfig.taskKeywords) {
       if ($lower -like "*$keyword*") {
         $items.tasks += [ordered]@{
-          id = $stableId
           title = $text
           confidence = [math]::Round($confidence + 0.1, 2)
           evidence = $evidence
@@ -311,7 +286,6 @@ function Get-MagiExtractedItems {
     foreach ($keyword in $DetectionConfig.eventKeywords) {
       if ($lower -like "*$keyword*") {
         $items.events += [ordered]@{
-          id = $stableId
           title = $text
           confidence = [math]::Round($confidence + 0.1, 2)
           evidence = $evidence
@@ -323,7 +297,6 @@ function Get-MagiExtractedItems {
 
     if ($lower -match $datetimePattern) {
       $items.schedule += [ordered]@{
-        id = $stableId
         description = $text
         confidence = [math]::Round($confidence + 0.05, 2)
         evidence = $evidence

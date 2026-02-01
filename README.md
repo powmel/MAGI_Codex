@@ -81,6 +81,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
 ```
 
 ## No-IDE Quick Start
+## Quick start (no IDE)
 
 ```powershell
 git clone <repo-url> F:\MAGI\code\repo
@@ -103,6 +104,9 @@ F:\MAGI
   ├─ temp
   └─ logs
 ```
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1 -ConfigPath .\configs\pipeline-settings.json
+powershell -ExecutionPolicy Bypass -File .\scripts\run_nightly.ps1
+
 
 ## Outputs and verification
 
@@ -130,6 +134,7 @@ Example outputs are available under `docs/examples/`.
 - Output logs avoid raw transcript content. Evidence snippets are stored only in the JSON outputs.
 - No audio data is committed to the repo; data remains in `F:\MAGI\data`.
 
+
 ## Troubleshooting (minimal)
 
 | Symptom | Likely cause | Fix |
@@ -145,4 +150,12 @@ Minimal commands:
 .\scripts\smoke_test.ps1
 .\scripts\run_nightly.ps1
 .\scripts\self_check.ps1
+### Minimal troubleshooting commands
+
+```powershell
+Get-Command ffmpeg
+Get-Command whisper-cli
+Get-Command faster-whisper
+python -m pip show faster-whisper
+Get-PSDrive C,F
 ```

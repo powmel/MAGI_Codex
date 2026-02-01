@@ -58,7 +58,7 @@ if ($ConfigPath) {
     exit 1
   }
 
-  $config = Get-Content -Path $ConfigPath -Raw | ConvertFrom-Json
+  $config = Get-Content -Path $ConfigPath | ConvertFrom-Json
 }
 
 Write-Host "MAGI Doctor Report"

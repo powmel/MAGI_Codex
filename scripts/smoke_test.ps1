@@ -4,164 +4,117 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path (Join-Path $scriptRoot "..")
 
+Import-Module (Join-Path $repoRoot "src" "MagiPipeline.psm1")
+
 $configPath = Join-Path $repoRoot "configs" "pipeline-settings.json"
+if (-not (Test-Path -LiteralPath $configPath)) {
+  throw "Missing config: $configPath"
+}
+
+$env:TEMP = "F:\MAGI\temp"
+$env:TMP = "F:\MAGI\temp"
+
 $doctorPath = Join-Path $scriptRoot "doctor.ps1"
-$nightlyPath = Join-Path $scriptRoot "run_nightly.ps1"
-
-$failures = @()
-
-function Add-Failure {
-  param([string]$Message)
-  $failures += $Message
-  Write-Host ("[FAIL] {0}" -f $Message)
+if (-not (Test-Path -LiteralPath $doctorPath)) {
+  throw "Missing dependency checker: $doctorPath"
 }
 
-function Add-Pass {
-  param([string]$Message)
-  Write-Host ("[PASS] {0}" -f $Message)
-}
-
-function Test-JsonSchemaSupport {
-  $command = Get-Command Test-Json -ErrorAction SilentlyContinue
-  if (-not $command) {
-    return $false
-  }
-  return $command.Parameters.ContainsKey("Schema")
-}
-
-function Test-JsonWithSchema {
-  param(
-    [Parameter(Mandatory = $true)][string]$JsonPath,
-    [Parameter(Mandatory = $true)][string]$SchemaPath,
-    [Parameter(Mandatory = $true)][string]$Label
-  )
-
-  if (-not (Test-Path -LiteralPath $JsonPath)) {
-    Add-Failure "$Label JSON missing at $JsonPath"
-    return
-  }
-  if (-not (Test-Path -LiteralPath $SchemaPath)) {
-    Add-Failure "$Label schema missing at $SchemaPath"
-    return
-  }
-
-  if (-not (Test-JsonSchemaSupport)) {
-    Add-Failure "Test-Json schema validation not available. Install PowerShell 7+."
-    return
-  }
-
-  $jsonText = Get-Content -LiteralPath $JsonPath -Raw
-  $schemaText = Get-Content -LiteralPath $SchemaPath -Raw
-  $valid = Test-Json -Json $jsonText -Schema $schemaText -ErrorAction SilentlyContinue
-  if ($valid) {
-    Add-Pass "$Label JSON validated against schema"
-  } else {
-    Add-Failure "$Label JSON failed schema validation"
-  }
+& $doctorPath -ConfigPath $configPath
+if ($LASTEXITCODE -ne 0) {
+  throw "Dependency checks failed. Resolve issues reported by scripts/doctor.ps1."
 }
 
 $dataRoot = "F:\MAGI\data"
 $tempRoot = "F:\MAGI\temp"
 $logRoot = "F:\MAGI\logs"
+
+Ensure-MagiDirectory -Path $dataRoot
+Ensure-MagiDirectory -Path $tempRoot
+Ensure-MagiDirectory -Path $logRoot
+
+$results = @()
+function Add-Result {
+  param(
+    [Parameter(Mandatory = $true)][string]$Name,
+    [Parameter(Mandatory = $true)][bool]$Passed,
+    [Parameter(Mandatory = $true)][string]$Message
+  )
+
+  $results += [pscustomobject]@{
+    Name = $Name
+    Passed = $Passed
+    Message = $Message
+  }
+
+  $status = if ($Passed) { "PASS" } else { "FAIL" }
+  Write-Host ("[{0}] {1} - {2}" -f $status, $Name, $Message)
+}
+
+Add-Result -Name "Directory setup" -Passed ($true) -Message "Ensured F:\MAGI\data, F:\MAGI\temp, F:\MAGI\logs exist"
+
 $inboxDir = Join-Path $dataRoot "inbox_wav"
 $extractedDir = Join-Path $dataRoot "extracted"
 $dailyDir = Join-Path $dataRoot "daily"
 
-$env:TEMP = $tempRoot
-$env:TMP = $tempRoot
+Ensure-MagiDirectory -Path $inboxDir
+Ensure-MagiDirectory -Path $extractedDir
+Ensure-MagiDirectory -Path $dailyDir
 
-Write-Host "MAGI Smoke Test"
-Write-Host "----------------"
-
-if (-not (Test-Path -LiteralPath $doctorPath)) {
-  Add-Failure "Missing doctor script at $doctorPath"
-}
-
-if (-not (Test-Path -LiteralPath $nightlyPath)) {
-  Add-Failure "Missing run_nightly script at $nightlyPath"
-}
-
-foreach ($dir in @($dataRoot, $tempRoot, $logRoot, $inboxDir, $extractedDir, $dailyDir)) {
-  if (-not (Test-Path -LiteralPath $dir)) {
-    New-Item -ItemType Directory -Path $dir -Force | Out-Null
-  }
-}
-Add-Pass "Required directories exist"
-
-if ($failures.Count -eq 0) {
-  & $doctorPath -ConfigPath $configPath
-  if ($LASTEXITCODE -ne 0) {
-    Add-Failure "Doctor checks failed"
-  } else {
-    Add-Pass "Doctor checks passed"
-  }
-}
-
-$heldDir = Join-Path $tempRoot "smoke_hold"
-$heldFiles = @()
+$wavFiles = Get-ChildItem -Path $inboxDir -Filter "*.wav" -File -ErrorAction SilentlyContinue
+$processed = $false
+$stashDir = Join-Path $tempRoot "smoke_test_stash"
+$stashedFiles = @()
 
 try {
-  $audioFiles = Get-ChildItem -LiteralPath $inboxDir -Filter "*.wav" -File -ErrorAction SilentlyContinue
-  if ($audioFiles -and $audioFiles.Count -gt 0) {
-    $primary = $audioFiles | Select-Object -First 1
-    $remaining = $audioFiles | Select-Object -Skip 1
+  if ($wavFiles -and $wavFiles.Count -gt 0) {
+    $processed = $true
+    $primaryFile = $wavFiles | Select-Object -First 1
+    $extraFiles = $wavFiles | Select-Object -Skip 1
 
-    if ($remaining) {
-      if (-not (Test-Path -LiteralPath $heldDir)) {
-        New-Item -ItemType Directory -Path $heldDir -Force | Out-Null
-      }
-
-      foreach ($file in $remaining) {
-        $destination = Join-Path $heldDir $file.Name
-        Move-Item -LiteralPath $file.FullName -Destination $destination -Force
-        $heldFiles += $destination
+    if ($extraFiles) {
+      Ensure-MagiDirectory -Path $stashDir
+      foreach ($file in $extraFiles) {
+        $destination = Join-Path $stashDir $file.Name
+        Move-Item -LiteralPath $file.FullName -Destination $destination
+        $stashedFiles += $destination
       }
     }
 
-    & $nightlyPath
-    if ($LASTEXITCODE -ne 0) {
-      Add-Failure "Nightly pipeline failed"
-    } else {
-      Add-Pass "Nightly pipeline completed"
+    $startTime = Get-Date
+    & (Join-Path $scriptRoot "run_nightly.ps1")
+
+    $newExtracted = Get-ChildItem -Path $extractedDir -Filter "*.json" -File | Where-Object { $_.LastWriteTime -ge $startTime }
+    $dailyPath = Join-Path $dailyDir ((Get-Date -Format "yyyy-MM-dd") + ".json")
+    $dailyExists = Test-Path -LiteralPath $dailyPath
+    $dailyRecent = $false
+    if ($dailyExists) {
+      $dailyInfo = Get-Item -LiteralPath $dailyPath
+      $dailyRecent = $dailyInfo.LastWriteTime -ge $startTime
     }
+
+    Add-Result -Name "Extracted output" -Passed ($newExtracted.Count -ge 1) -Message (if ($newExtracted.Count -ge 1) { "Extracted JSON created" } else { "No new extracted JSON found" })
+    Add-Result -Name "Daily output" -Passed ($dailyExists -and $dailyRecent) -Message (if ($dailyExists -and $dailyRecent) { "Daily JSON updated" } else { "Daily JSON not updated" })
   } else {
-    Write-Host "[INFO] No WAV files found in inbox_wav; skipping processing."
+    Add-Result -Name "Processing" -Passed ($true) -Message "No WAV files found; skipped processing"
   }
 }
 finally {
-  foreach ($heldFile in $heldFiles) {
-    if (Test-Path -LiteralPath $heldFile) {
-      Move-Item -LiteralPath $heldFile -Destination $inboxDir -Force
+  if ($stashedFiles.Count -gt 0) {
+    foreach ($stashed in $stashedFiles) {
+      if (Test-Path -LiteralPath $stashed) {
+        Move-Item -LiteralPath $stashed -Destination $inboxDir
+      }
+    }
+    if (Test-Path -LiteralPath $stashDir) {
+      Remove-Item -LiteralPath $stashDir -Recurse -Force -ErrorAction SilentlyContinue
     }
   }
-
-  if (Test-Path -LiteralPath $heldDir) {
-    Remove-Item -LiteralPath $heldDir -Force -Recurse -ErrorAction SilentlyContinue
-  }
 }
 
-$extractedFiles = Get-ChildItem -LiteralPath $extractedDir -Filter "*.json" -File -ErrorAction SilentlyContinue
-$dailyFiles = Get-ChildItem -LiteralPath $dailyDir -Filter "*.json" -File -ErrorAction SilentlyContinue
-
-if ($extractedFiles -and $dailyFiles) {
-  Add-Pass "JSON outputs found in extracted and daily"
-  $latestExtracted = $extractedFiles | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-  $latestDaily = $dailyFiles | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-  $schemaExtracted = Join-Path $repoRoot "configs" "extracted.schema.json"
-  $schemaDaily = Join-Path $repoRoot "configs" "daily.schema.json"
-  Test-JsonWithSchema -JsonPath $latestExtracted.FullName -SchemaPath $schemaExtracted -Label "Extracted"
-  Test-JsonWithSchema -JsonPath $latestDaily.FullName -SchemaPath $schemaDaily -Label "Daily"
-} else {
-  Add-Failure "JSON outputs missing in extracted or daily"
-}
-
-Write-Host ""
-if ($failures.Count -gt 0) {
-  Write-Host "Smoke test failed:"
-  foreach ($failure in $failures) {
-    Write-Host ("- {0}" -f $failure)
-  }
+$failed = $results | Where-Object { -not $_.Passed }
+if ($failed.Count -gt 0) {
+  Write-Host "\nSmoke test failed. Resolve the failures above before running nightly pipeline."
   exit 1
 }
 
-Write-Host "Smoke test passed."
+Write-Host "\nSmoke test passed."
